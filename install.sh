@@ -16,7 +16,7 @@ else
   # Create a kind cluster with the specified config file
   echo "Creating kind cluster using config file $KIND_CONFIG_FILE..."
   kind create cluster --name ea-project-kube --config "$KIND_CONFIG_FILE"
-  
+
   # Check if the cluster creation was successful
   if [ $? -ne 0 ]; then
     echo "Failed to create kind cluster."

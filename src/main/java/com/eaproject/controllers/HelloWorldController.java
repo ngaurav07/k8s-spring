@@ -11,4 +11,10 @@ public class HelloWorldController {
     public ResponseEntity<String> printHelloWorld(){
         return new ResponseEntity<>("Hello I am running.", HttpStatus.OK);
     }
+
+    @GetMapping("/api/v3/hello")
+    public ResponseEntity<String> printHelloWorldv3(){
+        return new ResponseEntity<>("Hello I am running in v3.", HttpStatus.OK);
+    }
+
 }
