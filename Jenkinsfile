@@ -3,17 +3,25 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "spring-boot-app:v1.0"
-        REMOTE_HOST = '18.117.149.95'  // Your EC2 instance public IP or DNS
-        REMOTE_USER = 'ubuntu'         // EC2 username
-        REMOTE_PATH = '/var/www/minimart' // Path to store Docker image on EC2
+        REMOTE_HOST = '18.117.149.95'
+        REMOTE_USER = 'ubuntu'
+        REMOTE_PATH = '/var/www/minimart'
         SSH_KEY = credentials('284afe8a-95fb-4d1b-9700-6c81b3134b1d')
     }
 
     stages {
+
+        stage('Checkout Code') {
+            steps {
+                script {
+                    git branch: 'dev', url: 'git@github.com:ngaurav07/k8s-spring.git'
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build Docker image
                     sh 'docker build -t $DOCKER_IMAGE .'
                 }
             }
@@ -23,7 +31,6 @@ pipeline {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: $SSH_KEY, keyFileVariable: 'SSH_KEY')]) {
                     script {
-                        // Save the Docker image to a tar file
                         sh 'docker save $DOCKER_IMAGE -o /tmp/spring-boot-app.tar'
 
                         // Transfer the tar file to the EC2 instance
