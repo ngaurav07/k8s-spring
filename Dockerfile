@@ -1,21 +1,11 @@
-# Start with a base image containing Java runtime
-FROM openjdk:21-jdk-slim as build
+FROM maven:3.9.9-ibm-semeru-21-jammy AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
 
-# Add Maintainer Info
-LABEL maintainer="ngaurav456@gmail.com"
-
-# Add a volume pointing to /tmp
-VOLUME /tmp
-
-# Make port 8080 available to the world outside this container
+RUN mvn clean package -DskipTests
+FROM openjdk:21-jdk-slim
+WORKDIR /app
+COPY --from=build /app/target/demo-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
-
-# The application's jar file
-ARG JAR_FILE=target/demo-0.0.1-SNAPSHOT.jar
-
-# Add the application's jar to the container
-ADD ${JAR_FILE} ea-project-demo.jar
-
-# Run the jar file
-ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/ea-project-demo.jar"]
-
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
