@@ -6,7 +6,7 @@ pipeline {
         REMOTE_HOST = '18.117.149.95'
         REMOTE_USER = 'ubuntu'
         REMOTE_PATH = '/var/www/minimart'
-        SSH_KEY = credentials('284afe8a-95fb-4d1b-9700-6c81b3134b1d')
+        SSH_KEY = '284afe8a-95fb-4d1b-9700-6c81b3134b1d'
     }
 
     stages {
@@ -14,19 +14,19 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t $DOCKER_IMAGE .'
+                    sh "sudo docker build -t $DOCKER_IMAGE ."
                 }
             }
         }
 
         stage('Transfer Docker Image to EC2') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: $SSH_KEY, keyFileVariable: 'SSH_KEY')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: SSH_KEY, keyFileVariable: 'SSH_KEY')]) {
                     script {
-                        sh 'docker save $DOCKER_IMAGE -o /tmp/spring-boot-app.tar'
+                        sh "sudo docker save $DOCKER_IMAGE -o /tmp/spring-boot-app.tar"
 
                         // Transfer the tar file to the EC2 instance
-                        sh 'scp -i $SSH_KEY /tmp/spring-boot-app.tar $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH'
+                        sh "scp -i $SSH_KEY /tmp/spring-boot-app.tar $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH"
                     }
                 }
             }
@@ -34,13 +34,13 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: $SSH_KEY, keyFileVariable: 'SSH_KEY')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: SSH_KEY, keyFileVariable: 'SSH_KEY')]) {
                     script {
                         // Load the Docker image on the EC2 instance
-                        sh 'ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "docker load -i $REMOTE_PATH/spring-boot-app.tar"'
+                        sh "ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo docker load -i $REMOTE_PATH/spring-boot-app.tar'"
 
                         // Stop any existing container and run the new Docker container
-                        sh 'ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "docker stop spring-boot-app || true && docker rm spring-boot-app || true && docker run -d -p 8080:8080 --name spring-boot-app $DOCKER_IMAGE"'
+                        sh "ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo docker stop spring-boot-app || true && sudo docker rm spring-boot-app || true && sudo docker run -d -p 8080:8080 --name spring-boot-app $DOCKER_IMAGE'"
                     }
                 }
             }
@@ -50,7 +50,7 @@ pipeline {
     post {
         always {
             // Clean up Docker resources on Jenkins server
-            sh 'docker system prune -f'
+            sh "docker system prune -f"
         }
     }
 }
