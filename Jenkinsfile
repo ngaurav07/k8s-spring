@@ -7,13 +7,14 @@ pipeline {
         REMOTE_USER = 'ubuntu'
         REMOTE_PATH = '/var/www/minimart'
         SSH_KEY = '284afe8a-95fb-4d1b-9700-6c81b3134b1d'
+        GITHUB_CREDENTIALS_ID = 'github-token-yogen'
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/ngaurav07/k8s-spring.git'
+                git url: 'https://github.com/ngaurav07/k8s-spring.git', credentialsId: "${GITHUB_CREDENTIALS_ID}"
             }
         }
 
