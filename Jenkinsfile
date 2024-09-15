@@ -2,45 +2,53 @@ pipeline {
     agent any
 
     environment {
-        // Set any environment variables you might need
-        MAVEN_HOME = tool 'M3'  // Assumes Maven is installed in Jenkins with the name 'M3'
+        DOCKER_IMAGE = 'spring-boot-app:latest'
+        REMOTE_HOST = '18.117.149.95'
+        REMOTE_USER = 'ubuntu'
+        REMOTE_PORT = '22'
+        REMOTE_PATH = '/var/www/minimart'
+        SSH_KEY = credentials('284afe8a-95fb-4d1b-9700-6c81b3134b1d') // Jenkins credentials ID for SSH key
     }
 
     stages {
-        stage('Checkout') {
+        stage('Build Docker Image') {
             steps {
-                // Checkout the code from the Git repository
-                git branch: 'main', url: 'https://github.com/your-repo-url.git'
+                script {
+                    // Build Docker image
+                    sh 'docker build -t $DOCKER_IMAGE .'
+                }
             }
         }
 
-        stage('Build') {
+        stage('Transfer Docker Image to EC2') {
             steps {
-                // Use Maven to clean and compile the project
-                sh "${MAVEN_HOME}/bin/mvn clean install"
+                script {
+                    // Save the Docker image to a tar file
+                    sh 'docker save $DOCKER_IMAGE -o /tmp/spring-boot-app.tar'
+
+                    // Transfer the tar file to the EC2 instance
+                    sh 'scp -i $SSH_KEY -P $REMOTE_PORT /tmp/spring-boot-app.tar $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH'
+                }
             }
         }
 
-        stage('Test') {
+        stage('Deploy to EC2') {
             steps {
-                // Use Maven to run tests
-                sh "${MAVEN_HOME}/bin/mvn test"
-            }
-        }
+                script {
+                    // Load the Docker image on the EC2 instance
+                    sh 'ssh -i $SSH_KEY -p $REMOTE_PORT $REMOTE_USER@$REMOTE_HOST "docker load -i $REMOTE_PATH/spring-boot-app.tar"'
 
-        stage('Deploy') {
-            steps {
-                // Custom deployment steps, for example, SCP to a server or running on Docker
-                echo 'Deploying application...'
-                // Add your deployment steps here
+                    // Run the Docker container on the EC2 instance
+                    sh 'ssh -i $SSH_KEY -p $REMOTE_PORT $REMOTE_USER@$REMOTE_HOST "docker stop spring-boot-app || true && docker rm spring-boot-app || true && docker run -d -p 8080:8080 --name spring-boot-app $DOCKER_IMAGE"'
+                }
             }
         }
     }
 
     post {
         always {
-            // Actions that will run after the pipeline, e.g., clean up or notifications
-            echo 'Pipeline finished!'
+            // Clean up Docker resources
+            sh 'docker system prune -f'
         }
     }
 }

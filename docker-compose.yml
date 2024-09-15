@@ -2,9 +2,9 @@ version: '3.8'
 
 services:
   app:
-    image: spring-test-ea:v1.0    # Replace with your Docker image name
+    image: spring-test-ea:v1.0
     build:
-      context: .  # The context where the Dockerfile is located
+      context: .
     ports:
-      - "8080:8080"  # Map port 8080 on the host to port 8080 on the container
+      - "8080:8080"
     container_name: spring-boot-app
