@@ -11,14 +11,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
-            steps {
-                script {
-                    git branch: 'dev', url: 'git@github.com:ngaurav07/k8s-spring.git'
-                }
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 script {
