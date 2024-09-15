@@ -11,6 +11,15 @@ pipeline {
 
     stages {
 
+      stage('Verify Workspace') {
+            steps {
+                script {
+                    // List files in the workspace to verify the presence of Dockerfile and application files
+                    sh 'ls -al'
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
