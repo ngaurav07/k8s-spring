@@ -10,13 +10,9 @@ pipeline {
     }
 
     stages {
-
-      stage('Verify Workspace') {
+        stage('Checkout SCM') {
             steps {
-                script {
-                    // List files in the workspace to verify the presence of Dockerfile and application files
-                    sh 'ls -al'
-                }
+                checkout scm
             }
         }
 
@@ -33,8 +29,6 @@ pipeline {
                 withCredentials([sshUserPrivateKey(credentialsId: SSH_KEY, keyFileVariable: 'SSH_KEY')]) {
                     script {
                         sh "sudo docker save $DOCKER_IMAGE -o /tmp/spring-boot-app.tar"
-
-                        // Transfer the tar file to the EC2 instance
                         sh "scp -i $SSH_KEY /tmp/spring-boot-app.tar $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH"
                     }
                 }
@@ -45,10 +39,7 @@ pipeline {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: SSH_KEY, keyFileVariable: 'SSH_KEY')]) {
                     script {
-                        // Load the Docker image on the EC2 instance
                         sh "ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo docker load -i $REMOTE_PATH/spring-boot-app.tar'"
-
-                        // Stop any existing container and run the new Docker container
                         sh "ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo docker stop spring-boot-app || true && sudo docker rm spring-boot-app || true && sudo docker run -d -p 8080:8080 --name spring-boot-app $DOCKER_IMAGE'"
                     }
                 }
@@ -58,8 +49,9 @@ pipeline {
 
     post {
         always {
-            // Clean up Docker resources on Jenkins server
-            sh "docker system prune -f"
+            script {
+                sh "docker system prune -f"
+            }
         }
     }
 }
