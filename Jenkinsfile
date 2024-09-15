@@ -10,16 +10,17 @@ pipeline {
     }
 
     stages {
-        stage('Checkout SCM') {
+
+        stage('Checkout') {
             steps {
-                checkout scm
+                git url: 'https://github.com/ngaurav07/k8s-spring.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "sudo docker build -t $DOCKER_IMAGE ."
+                    sh "docker build -t $DOCKER_IMAGE ."
                 }
             }
         }
@@ -28,7 +29,7 @@ pipeline {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: SSH_KEY, keyFileVariable: 'SSH_KEY')]) {
                     script {
-                        sh "sudo docker save $DOCKER_IMAGE -o /tmp/spring-boot-app.tar"
+                        sh "docker save $DOCKER_IMAGE -o /tmp/spring-boot-app.tar"
                         sh "scp -i $SSH_KEY /tmp/spring-boot-app.tar $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH"
                     }
                 }
@@ -39,8 +40,8 @@ pipeline {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: SSH_KEY, keyFileVariable: 'SSH_KEY')]) {
                     script {
-                        sh "ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo docker load -i $REMOTE_PATH/spring-boot-app.tar'"
-                        sh "ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo docker stop spring-boot-app || true && sudo docker rm spring-boot-app || true && sudo docker run -d -p 8080:8080 --name spring-boot-app $DOCKER_IMAGE'"
+                        sh "ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'docker load -i $REMOTE_PATH/spring-boot-app.tar'"
+                        sh "ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'docker stop spring-boot-app || true && docker rm spring-boot-app || true && docker run -d -p 8080:8080 --name spring-boot-app $DOCKER_IMAGE'"
                     }
                 }
             }
@@ -51,6 +52,7 @@ pipeline {
         always {
             script {
                 sh "docker system prune -f"
+                sh "rm -f /tmp/spring-boot-app.tar"
             }
         }
     }
